@@ -1,0 +1,26 @@
+RECLONE=yes
+DEST=/opt/stack
+SCREEN_LOGDIR=/opt/stack/new/screen-logs
+LOGFILE=/opt/stack/new/devstacklog.txt
+DATABASE_PASSWORD=freebsd
+RABBIT_PASSWORD=freebsd
+SERVICE_TOKEN=freebsd
+SERVICE_PASSWORD=freebsd
+ADMIN_PASSWORD=freebsd
+disable_service n-net
+enable_service q-svc
+enable_service q-agt
+enable_service q-dhcp
+enable_service q-l3
+enable_service q-meta
+enable_service q-lbaas
+enable_service neutron
+# Optional, to enable tempest configuration as part of devstack
+enable_service tempest
+Q_PLUGIN=ml2
+Q_ML2_PLUGIN_MECHANISM_DRIVERS=openvswitch
+Q_ML2_PLUGIN_TYPE_DRIVERS=vlan
+ML2_VLAN_RANGES=physnet1:1500:1600
+ENABLE_TENANT_VLANS=True
+PHYSICAL_NETWORK=physnet1
+OVS_PHYSICAL_BRIDGE=br-eth1

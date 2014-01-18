@@ -1,5 +1,5 @@
-Setting Up a Testing Infrastrure for OpenStack 
-====================================
+Setting Up a Testing Infrastructure for OpenStack 
+=================================================
 
 
 Need
@@ -15,10 +15,11 @@ to setup your own testing infrastructure, probably in your company lab,
 in the deployment you prefer and test the changes that get submitted. 
 
 We had contributed NetScaler driver and wanted to make sure it is 
-not broken and hence the test infrastructure. The following paragraphs 
-captures the thought process and provides code snipetts from the code
-that was used to setup the testing infrastructure at Citrix. Hoping, it will
-be useful for others who are setting up their own test infrastructure.
+not broken and hence we setup a test infrastructure. The following paragraphs 
+captures the thought process of setting up a test infrasture and provides 
+code snipetts from the code that was used to setup the testing 
+infrastructure at Citrix. Hoping, it will be useful for others who 
+are setting up their own test infrastructure.
 
 The starting point is http://ci.openstack.org/third_party.html
 
@@ -31,15 +32,14 @@ You have to be clear on certain things before jumping on to setup the testing in
 
 What are you trying to qualify? 
   This should have been obvious in most cases. It is most probably the 
-  plugin/driver that was written for your software/hardware. Is 
-  this opensource? Can it be part of the OpenStack Jenkins?
+  plugin/driver that was written for your software/hardware.  
 What changes to listen for?
   Make a note of the code areas that will impact your software, you 
   would want to trigger tests only if those changes are submitted 
   on that. For example, it could be the core modules of the openstack 
   project.
 What tests to run? 
-  Most likely vendors run a subset of tempest tests but you could 
+  Most likely vendors run a subset of tempest_ tests but you could 
   in addition run your own tests as well.
 
 
@@ -47,18 +47,19 @@ Recommendations
 ~~~~~~~~~~~~~~~~
 
 1. You might want to enable the test infrastructure to run tests 
-   on a particular changelist. This will be handy if code submit 
-   events had got lost or during test runs during test infra development.
+   on a particular changelist. This will be handy when you observe that 
+   a code submit event got lost and you want to trigger a test offline. 
+   Or during the test infrastructure development iteself.
 2. You might not want to vote (-1) from the test infrastructure to start with.
    It is best if the testing infrastructure can send you an email and
-   you can inspect before voting.
+   you can inspect the situation before voting -1.
 
 
 Listening to code submission
 -----------------------------
-Openstack has a gerrit code review system review.openstack.org through which 
-developers submit code. Your infrastructure has to listen whenever code 
-patches are submitted to gerrit and trigger tests. 
+Openstack has a gerrit_ code review system via which developers submit 
+code. Your infrastructure has to listen whenever relavant code patches that are 
+submitted to gerrit_ and trigger tests. 
 
 Use pypi **pygerrit** to listen to events. 
 
@@ -77,8 +78,9 @@ Check if files match criteria?
   Use pypi **GitPython** in combination with git command line to 
   inspect the files in the patch. Assuming you already 
   would have answers for - **What changes to listen for?** - you 
-  should by now have the exact directories/files to check for code 
-  submission. Here is a code snippet that will do that.
+  should by now have the exact directories/files to check during code 
+  submission. Here is a code snippet that will check if files in a
+  change submitted is of your interest.
 
 .. code-block:: python
 
@@ -97,8 +99,8 @@ Check if files match criteria?
   """ 
   1. local_repo_path == /opt/stack/gerrit_depot/neutron # the git repository that will be used for file inspection
   2. review_repo_name == gerrit_repo # git remote name in local_repo_path that is pointing to review.openstack.org repository
-  3. files_to_check == 'neutron/services/loadbalancer/drivers/netscaler'
-  4. change_ref == refs/changes/24/57524/9 
+  3. files_to_check == 'neutron/services/loadbalancer/drivers/netscaler' # files of interest
+  4. change_ref == refs/changes/24/57524/9 # changeref of a patchset submitted for a particular change
   """
   def are_files_matching_criteria(local_repo_path, review_repo_name, files_to_check, change_ref):
 
@@ -230,7 +232,7 @@ The first step is to setup the systems involved in testing. Assuming you would k
 Running the tempest tests 
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-We identified to run the LBaaS API tests, future other LBaaS scenario 
+We identified to run the LBaaS API tests, in future other LBaaS scenario 
 tests also will be included
 
 .. code-block:: bash
@@ -241,10 +243,9 @@ tests also will be included
 Collecting logs
 ~~~~~~~~~~~~~~~
 
-The best way to collect logs from DevStack is to use the openstack-gate's
-cleanup_host function present in the following script 
-https://github.com/openstack-infra/devstack-gate/blob/master/functions.sh
-It will collect logs files and generates results in pretty format.
+The best way to collect logs from DevStack is to use cleanup_host function 
+present in devstack-gate's functions.sh_. It not only collects log files but
+also generates results in pretty format.
 
 .. code-block:: bash
   source /opt/stack/new/devstack-gate/functions.sh
@@ -254,24 +255,23 @@ It will collect logs files and generates results in pretty format.
   mkdir -p $WORKSPACE/logs
   cleanup_host
 
-
-
 **NOTE** The above script is dependent on 
 https://github.com/openstack-infra/config/blob/master/modules/jenkins/files/slave_scripts/subunit2html.py
 copy this to /usr/local/jenkins/slave_scripts/subunit2html.py
 
 Uploading logs
 ~~~~~~~~~~~~~~
-Plan for a way of sharing the log files in the public domain. 
+Plan for a way of sharing the log files in the public domain. Only then
+the community members will be able to have a look at the test results.
 At Citrix, we have used sharefile. We might be able to contribute space 
- for community depending on the number of requests received. Please
-feel free to shoot a mail to me. We will take a call by next week.
+for community depending on the number of requests received. Please
+feel free to shoot a mail to me. We will take a call by next week (Jan-25).
 
 Vote
 ----
 The final step in the process is to vote (+1/-1) depending on the result. 
-There are three kinds of voting available in the gerrit system.  The 3rd 
-party infrastruce is expected to do the 'Verified' votes.
+There are three kinds of voting available in the gerrit system. The 3rd 
+party infrastructure is expected to execute the 'Verified' votes.
 Apply for a service account in openstack as per the details specificed in
 http://ci.openstack.org/third_party.html#requesting-a-service-account
 Use the ssh key to execute a Verified vote. An example is given below  
@@ -280,5 +280,10 @@ Use the ssh key to execute a Verified vote. An example is given below
 
    $ ssh -p 29418 review.openstack.org gerrit review -m '"LBaaS API testing failed with NetScaler providing LBaaS. Please find logs at <http://....>"' --verified=-1 c0ff33111123313131
 
-NOTE:
-Vote should contain link to logs.
+**NOTE** Vote should contain link to logs.
+
+.. _tempest: https://github.com/openstack/tempest
+.. _gerrit: https://review.openstack.org
+.. _functions.sh: https://github.com/openstack-infra/devstack-gate/blob/master/functions.sh
+
+

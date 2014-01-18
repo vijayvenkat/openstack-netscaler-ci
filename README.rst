@@ -5,9 +5,20 @@ Setting Up a Testing Infrastrure for OpenStack
 Need
 -----
 
-Inorder to make sure the code contributed by you, to OpenStack community, remains stable and to identify problems before it is too late, you need to setup a testing infrastructure that will continuously test and give feedback whenever changes get submitted to the community. This cannot be done by the openstack community CI infrastructure, because it most likely won.t have your  hardware/software. You need to setup your own testing infrastructure, probably in your company lab, in the deployment you prefer and test the changes that get submitted. 
+Inorder to make sure the code contributed by you, to OpenStack community,
+remains stable and to identify problems before it is too late, you need
+to setup a testing infrastructure that will continuously test and give 
+feedback/vote whenever changes get submitted to the community. This 
+cannot be done by the openstack community CI infrastructure, because
+it wont have your/vendor's hardware/software. You need 
+to setup your own testing infrastructure, probably in your company lab,
+in the deployment you prefer and test the changes that get submitted. 
 
-We had contributed NetScaler driver and wanted to make sure it is not broken by changes happening in the community hence we setup a testing infrastructure at Citrix. 
+We had contributed NetScaler driver and wanted to make sure it is 
+not broken and hence the test infrastructure. The following paragraphs 
+captures the thought process and provides code snipetts from the code
+that was used to setup the testing infrastructure at Citrix. Hoping, it will
+be useful for others who are setting up their own test infrastructure.
 
 The starting point is http://ci.openstack.org/third_party.html
 
@@ -34,6 +45,7 @@ What tests to run?
 
 Recommendations
 ~~~~~~~~~~~~~~~~
+
 1. You might want to enable the test infrastructure to run tests 
    on a particular changelist. This will be handy if code submit 
    events had got lost or during test runs during test infra development.
@@ -63,13 +75,31 @@ Use pypi **pygerrit** to listen to events.
 Check if files match criteria?
 
   Use pypi **GitPython** in combination with git command line to 
-  inspect the files in the patch. By this time assuming you already 
+  inspect the files in the patch. Assuming you already 
   would have answers for - **What changes to listen for?** - you 
-  should look for the exact directories/files to check for code 
+  should by now have the exact directories/files to check for code 
   submission. Here is a code snippet that will do that.
 
 .. code-block:: python
 
+  def execute_command(command, delimiter=' '):
+    command_as_array = command.split(delimiter)
+    logging.debug("Executing command: " + str(command)) 
+    p = subprocess.Popen(command_as_array,stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output, errors = p.communicate()
+    if p.returncode != 0:
+        logging.error("Error: Could not exuecute command " + str(command)  + ". Failed with errors " + str(errors))
+        return False
+    logging.debug("Output command: " + str(output))
+    
+    return True
+
+  """ 
+  1. local_repo_path == /opt/stack/gerrit_depot/neutron # the git repository that will be used for file inspection
+  2. review_repo_name == gerrit_repo # git remote name in local_repo_path that is pointing to review.openstack.org repository
+  3. files_to_check == 'neutron/services/loadbalancer/drivers/netscaler'
+  4. change_ref == refs/changes/24/57524/9 
+  """
   def are_files_matching_criteria(local_repo_path, review_repo_name, files_to_check, change_ref):
 
     """  Issue checkout using command line"""
@@ -114,18 +144,14 @@ Once the code submitted is found to be of interest, next step is to run the test
 
 Setting Up All Systems 
 ~~~~~~~~~~~~~~~~~~~~~~~
-The first step is to setup the systems involved in testing. Assuming you would know how to bring your own systems in the deployments to clean slate, following are the steps that have to be done to setup devstack
+The first step is to setup the systems involved in testing. Assuming you would know how to bring your own systems in the deployments to clean slate, following are the steps that have to be done to setup DevStack
 
-1. Use an appropriate localrc with Devstack VM. 
-
-  It is recommended to use the following setting
+1. Use an appropriate localrc with Devstack VM. Here is a full sample. It is recommended to use the following setting
 
 .. code-block:: bash
 
   RECLONE=YES # inorder to pull latest changes during every test cycle
   DEST=/opt/stack/new  # test scripts would be expecting devstack to be installed in this directory
-
-  Here is a full sample
 
 2. Run the following script to setup DevStack
 
@@ -148,7 +174,6 @@ The first step is to setup the systems involved in testing. Assuming you would k
 		cd $ROOT_DIR/$CHANGE_REF_PROJECT
 		git checkout master
 		git fetch https://review.openstack.org/openstack/$CHANGE_REF_PROJECT $CHANGE_REF && git checkout FETCH_HEAD
-		#TODO: TBR, to be removed, instrumentation for indrucing error./tmp/netscaler_driver.py
 	else
 		echo "Nothing to be patched"
 		return
@@ -156,6 +181,7 @@ The first step is to setup the systems involved in testing. Assuming you would k
   }
 
 4. Setup openstack configuration files to use your software
+   We had to patch the neutron.conf to include NetScaler driver
 
 .. code-block:: bash
 
@@ -166,6 +192,7 @@ The first step is to setup the systems involved in testing. Assuming you would k
   }
 
 5. Restart concerned service
+   We had to restart neutron
 
 .. code-block:: bash
 
@@ -195,7 +222,7 @@ The first step is to setup the systems involved in testing. Assuming you would k
 	echo "Stopping neutron process: $PID"
 	kill -9 $PID
 	NL=`echo -ne '\015'`
-	screen -S stack -p 'q-svc' -X stuff 'cd /opt/stack/neutron && python /usr/local/bin/neutron-server --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini'$NL
+	screen -S stack -p 'q-svc' -X stuff 'cd /opt/stack/new/neutron && python /usr/local/bin/neutron-server --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini'$NL
 	# wait till neutron is up
 	wait_till_port_open 9696
   }
@@ -203,27 +230,55 @@ The first step is to setup the systems involved in testing. Assuming you would k
 Running the tempest tests 
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Run the identified tests
+We identified to run the LBaaS API tests, future other LBaaS scenario 
+tests also will be included
 
 .. code-block:: bash
 
-  cd /opt/stack/tempest && testr init  
-  cd /opt/stack/tempest && testr run tempest.api.network.test_load_balancer
+  cd /opt/stack/new/tempest && testr init  
+  cd /opt/stack/new/tempest && testr run tempest.api.network.test_load_balancer
 
 Collecting logs
 ~~~~~~~~~~~~~~~
-For packaging devstack related log files and generating html 
-file having results of the tests run, cleanup_host function from 
-functions.sh script of devstack-gate can be used
+
+The best way to collect logs from DevStack is to use the openstack-gate's
+cleanup_host function present in the following script 
+https://github.com/openstack-infra/devstack-gate/blob/master/functions.sh
+It will collect logs files and generates results in pretty format.
+
+.. code-block:: bash
+  source /opt/stack/new/devstack-gate/functions.sh
+  export BASE='/opt/stack/new'
+  export WORKSPACE='/opt/stack/log_dest'
+  rm -rf $WORKSPACE
+  mkdir -p $WORKSPACE/logs
+  cleanup_host
+
+
+
+**NOTE** The above script is dependent on 
+https://github.com/openstack-infra/config/blob/master/modules/jenkins/files/slave_scripts/subunit2html.py
+copy this to /usr/local/jenkins/slave_scripts/subunit2html.py
 
 Uploading logs
 ~~~~~~~~~~~~~~
-Plan a way of sharing the log files and test results publicly, like uploading them on sharefile
+Plan for a way of sharing the log files in the public domain. 
+At Citrix, we have used sharefile. We might be able to contribute space 
+ for community depending on the number of requests received. Please
+feel free to shoot a mail to me. We will take a call by next week.
 
 Vote
 ----
-Apply for a service account in openstack which will enable him/her to vote for changes which he/she is testing.
-<code here>
+The final step in the process is to vote (+1/-1) depending on the result. 
+There are three kinds of voting available in the gerrit system.  The 3rd 
+party infrastruce is expected to do the 'Verified' votes.
+Apply for a service account in openstack as per the details specificed in
+http://ci.openstack.org/third_party.html#requesting-a-service-account
+Use the ssh key to execute a Verified vote. An example is given below  
+
+.. code-block:: bash
+
+   $ ssh -p 29418 review.openstack.org gerrit review -m '"LBaaS API testing failed with NetScaler providing LBaaS. Please find logs at <http://....>"' --verified=-1 c0ff33111123313131
 
 NOTE:
 Vote should contain link to logs.

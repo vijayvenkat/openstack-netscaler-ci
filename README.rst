@@ -7,16 +7,16 @@ Need
 
 Inorder to make sure the code contributed by you, to OpenStack community,
 remains stable and to identify problems before it is too late, you need
-to setup a testing infrastructure that will continuously test and give 
-feedback/vote whenever changes get submitted to the community. This 
-cannot be done by the openstack community CI infrastructure, because
-it wont have your/vendor's hardware/software. You need 
+to setup a testing infrastructure. It should continuously test and give 
+feedback/vote whenever changes get submitted to the community. Tests 
+cannot be run by the openstack community CI infrastructure, because
+it won't have your/vendor's hardware/software. You need 
 to setup your own testing infrastructure, probably in your company lab,
 in the deployment you prefer and test the changes that get submitted. 
 
-We had contributed NetScaler driver and wanted to make sure it is 
-not broken and hence we setup a test infrastructure. The following paragraphs 
-captures the thought process of setting up a test infrasture and provides 
+We had contributed NetScaler driver, inorder to make sure it is 
+not broken we setup a test infrastructure. The following paragraphs 
+captures the thought process of setting up a test infrasture, and provides 
 code snipetts from the code that was used to setup the testing 
 infrastructure at Citrix. Hoping, it will be useful for others who 
 are setting up their own test infrastructure.
@@ -39,7 +39,7 @@ What changes to listen for?
   on that. For example, it could be the core modules of the openstack 
   project.
 What tests to run? 
-  Most likely vendors run a subset of tempest_ tests but you could 
+  Most likely vendors run a subset of tempest_ tests, but you could 
   in addition run your own tests as well.
 
 
@@ -49,17 +49,18 @@ Recommendations
 1. You might want to enable the test infrastructure to run tests 
    on a particular changelist. This will be handy when you observe that 
    a code submit event got lost and you want to trigger a test offline. 
-   Or during the test infrastructure development iteself.
-2. You might not want to vote (-1) from the test infrastructure to start with.
-   It is best if the testing infrastructure can send you an email and
-   you can inspect the situation before voting -1.
+   Or during the test infrastructure development phase.
+2. You might **not** want to vote (-1) from the test infrastructure to start with.
+   It is best if the testing infrastructure can send you an email on -1 cases.
+   You can inspect files manually, once confident, you could trigger the 
+   the negatve vote manually.
 
 
 Listening to code submission
 -----------------------------
 Openstack has a gerrit_ code review system via which developers submit 
-code. Your infrastructure has to listen whenever relavant code patches that are 
-submitted to gerrit_ and trigger tests. 
+code. Your infrastructure has to listen to gerrit, and whenever *relavant*
+code patches are submitted to gerrit it should trigger tests. 
 
 Use pypi **pygerrit** to listen to events. 
 
@@ -77,11 +78,11 @@ Use pypi **pygerrit** to listen to events.
 Check if files match criteria?
 
   Use pypi **GitPython** in combination with git command line to 
-  inspect the files in the patch. Assuming you already 
-  would have answers for - **What changes to listen for?** - you 
-  should by now have the exact directories/files to check during code 
-  submission. Here is a code snippet that will check if files in a
-  change submitted is of your interest.
+  inspect the files in the patch. If you already have answered
+  - **What changes to listen for?** - you should have the exact 
+  directories/files to check during code submission. Here is a 
+  code snippet that will check if files in a change submitted is 
+  of your interest.
 
 .. code-block:: python
 
@@ -143,18 +144,22 @@ Check if files match criteria?
 
 Running tests & packaging logs
 ------------------------------------
-Once the code submitted is found to be of interest, next step is to run the tests idenified.
+Once the code submitted is found to be of interest, the tests idenified have to be run.
 
 Setting up all systems 
 ~~~~~~~~~~~~~~~~~~~~~~~
-The first step is to setup the systems involved in testing. You should bring your vendor specific systems in the deployment to clean slate and also setup DevStack. To setup the former, you are the best person to know the steps. To setup the latter (devstack), following are the steps that are recommended
+The first step is to setup the systems involved in testing. You should 
+setup vendor specific systems in the deployment to clean slate, and 
+also setup DevStack. To setup the former, you are the best person
+to know the steps. To setup the latter (devstack), following are 
+the steps that are recommended
 
 1. Use an appropriate localrc with Devstack VM. Here_ is a full sample. It is recommended to use the following setting
 
 .. code-block:: bash
 
   RECLONE=YES # inorder to pull latest changes during every test cycle
-  DEST=/opt/stack/new  # test scripts would be expecting devstack to be installed in this directory
+  DEST=/opt/stack/new  # log collection scripts would be expecting devstack to be installed in this directory
 
 2. Run the following script to setup DevStack
 
@@ -164,7 +169,7 @@ The first step is to setup the systems involved in testing. You should bring you
   ./unstack.sh > /tmp/unstack.out 2>&1
   ./stack.sh > /tmp/stack.out 2>&1
 
-3. patch submitted code 
+3. Patch submitted code 
 
 .. code-block:: bash
 
@@ -184,6 +189,7 @@ The first step is to setup the systems involved in testing. You should bring you
   }
 
 4. Setup openstack configuration files to use your software
+
    We had to patch the neutron.conf to include NetScaler driver
 
 .. code-block:: bash
@@ -194,7 +200,8 @@ The first step is to setup the systems involved in testing. You should bring you
 	sed -i 's!HaproxyOnHostPluginDriver:default!HaproxyOnHostPluginDriver\nservice_provider=LOADBALANCER:NetScaler:neutron.services.loadbalancer.drivers.netscaler.netscaler_driver.NetScalerPluginDriver:default!g' /etc/neutron/neutron.conf
   }
 
-5. Restart concerned service
+5. Restart concerned openstack service
+
    We had to restart neutron
 
 .. code-block:: bash
@@ -233,8 +240,8 @@ The first step is to setup the systems involved in testing. You should bring you
 Running the tempest tests 
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-We identified to run the LBaaS API tests, in future other LBaaS scenario 
-tests also will be included
+We run the LBaaS API tests today. In future, LBaaS scenario tests will 
+be included.
 
 .. code-block:: bash
 
@@ -245,7 +252,7 @@ Collecting logs
 ~~~~~~~~~~~~~~~
 
 The best way to collect logs from DevStack is to use cleanup_host function 
-present in devstack-gate's functions.sh_. It not only collects log files but
+present in devstack-gate's functions.sh_. In addition to collecting log files it
 also generates results in pretty format.
 
 .. code-block:: bash
@@ -262,11 +269,11 @@ copy this to /usr/local/jenkins/slave_scripts/subunit2html.py
 
 Uploading logs
 ~~~~~~~~~~~~~~
-Plan for a way of sharing the log files in the public domain. Only then
+Upload the log files in the public domain. Only then,
 the community members will be able to have a look at the test results.
 At Citrix, we have used sharefile. We might be able to contribute space 
 for community depending on the number of requests received. Please
-feel free to shoot a mail to me. We will take a call by next week (Jan-25).
+feel free to shoot a mail to me by next week (Jan-25).
 
 Vote
 ----

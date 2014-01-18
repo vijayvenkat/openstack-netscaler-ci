@@ -54,6 +54,7 @@ Use pypi **pygerrit** to listen to events.
   https://github.com/sonyxperiadev/pygerrit/blob/master/example.py
 
   Get the patchset and project details from the event.
+
 .. code-block:: bash
     if isinstance(event, PatchsetCreatedEvent):
       change_ref = patchSetCreatedEvent.patchset.ref
@@ -117,23 +118,27 @@ The first step is to setup the systems involved in testing. Assuming you would k
 
 1. Use an appropriate localrc with Devstack VM. 
 
-It is recommended to use the following setting
+  It is recommended to use the following setting
 
 .. code-block:: bash
+
   RECLONE=YES # inorder to pull latest changes during every test cycle
   DEST=/opt/stack/new  # test scripts would be expecting devstack to be installed in this directory
 
-Here is a full sample
+  Here is a full sample
 
 2. Run the following script to setup DevStack
 
 .. code-block:: bash
+
   cd $DEVSTACK_DIR
   ./unstack.sh > /tmp/unstack.out 2>&1
   ./stack.sh > /tmp/stack.out 2>&1
 
 3. patch submitted code 
+
 .. code-block:: bash
+
   function patch_submited_change
   {
 	# patch the newly submittedfiles
@@ -163,6 +168,7 @@ Here is a full sample
 5. Restart concerned service
 
 .. code-block:: bash
+
   function wait_till_port_open
   {
 	PORT_NUM=$1
@@ -198,6 +204,7 @@ Running the tempest tests
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Run the identified tests
+
 .. code-block:: bash
 
   cd /opt/stack/tempest && testr init  

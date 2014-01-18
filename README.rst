@@ -117,7 +117,7 @@ The first step is to setup the systems involved in testing. Assuming you would k
 
 1. Use an appropriate localrc with Devstack VM. 
 
-It is recommended to use the following setting::
+It is recommended to use the following setting
 
 .. code-block:: bash
   RECLONE=YES # inorder to pull latest changes during every test cycle
@@ -128,9 +128,9 @@ Here is a full sample
 2. Run the following script to setup DevStack
 
 .. code-block:: bash
-	cd $DEVSTACK_DIR
-	./unstack.sh > /tmp/unstack.out 2>&1
-	./stack.sh > /tmp/stack.out 2>&1
+  cd $DEVSTACK_DIR
+  ./unstack.sh > /tmp/unstack.out 2>&1
+  ./stack.sh > /tmp/stack.out 2>&1
 
 3. patch submitted code 
 .. code-block:: bash
@@ -197,7 +197,8 @@ Here is a full sample
 Running the tempest tests 
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-Run the identified tests::
+Run the identified tests
+.. code-block:: bash
 
   cd /opt/stack/tempest && testr init  
   cd /opt/stack/tempest && testr run tempest.api.network.test_load_balancer

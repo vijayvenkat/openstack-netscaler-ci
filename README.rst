@@ -25,7 +25,7 @@ The starting point is http://ci.openstack.org/third_party.html
 
 This document can be considered an addendum to the above link.
 
-First things First
+First things first
 ------------------
 
 You have to be clear on certain things before jumping on to setup the testing infrastructure.
@@ -69,6 +69,7 @@ Use pypi **pygerrit** to listen to events.
   Get the patchset and project details from the event.
 
 .. code-block:: bash
+
     if isinstance(event, PatchsetCreatedEvent):
       change_ref = patchSetCreatedEvent.patchset.ref
       submitted_project = patchSetCreatedEvent.change.project
@@ -144,11 +145,11 @@ Running tests & packaging logs
 ------------------------------------
 Once the code submitted is found to be of interest, next step is to run the tests idenified.
 
-Setting Up All Systems 
+Setting up all systems 
 ~~~~~~~~~~~~~~~~~~~~~~~
-The first step is to setup the systems involved in testing. Assuming you would know how to bring your own systems in the deployments to clean slate, following are the steps that have to be done to setup DevStack
+The first step is to setup the systems involved in testing. You should bring your vendor specific systems in the deployment to clean slate and also setup DevStack. To setup the former, you are the best person to know the steps. To setup the latter (devstack), following are the steps that are recommended
 
-1. Use an appropriate localrc with Devstack VM. Here is a full sample. It is recommended to use the following setting
+1. Use an appropriate localrc with Devstack VM. Here_ is a full sample. It is recommended to use the following setting
 
 .. code-block:: bash
 
@@ -285,5 +286,6 @@ Use the ssh key to execute a Verified vote. An example is given below
 .. _tempest: https://github.com/openstack/tempest
 .. _gerrit: https://review.openstack.org
 .. _functions.sh: https://github.com/openstack-infra/devstack-gate/blob/master/functions.sh
+.. _Here: https://github.com/vijayvenkat/openstack-netscaler-ci/blob/master/localrc
 
 

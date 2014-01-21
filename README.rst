@@ -1,5 +1,5 @@
-Setting Up a Testing Infrastructure for OpenStack 
-=================================================
+OpenStack Third Party Testing Setup Guide
+=========================================
 
 
 Need
